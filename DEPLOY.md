@@ -1,25 +1,27 @@
-# Deploying the Recipe App
+# Deploying to Vercel via GitHub
 
-Since this is a static React application (built with Vite), deployment is very simple. I have already generated the production build for you in the `dist` folder.
+I have already initialized the local Git repository and committed your code.
 
-Here are the 3 easiest ways to deploy:
+## Step 1: Push to GitHub
+Since I don't have direct access to your GitHub account, please follow these steps:
 
-## Option 1: Netlify Drop (Easiest - No Tools Required)
-1.  Locate the folder: `c:\Users\Hassan Ahmed\Antigravity workplace\recipe-app\dist`
-2.  Go to [Netlify Drop](https://app.netlify.com/drop).
-3.  **Drag and drop** the `dist` folder directly onto the page.
-4.  Your site will be live instantly!
+1.  Log in to [GitHub.com](https://github.com) and create a **New Repository** (name it `recipe-app` or similar).
+2.  **Copy the URL** of your new repository (e.g., `https://github.com/your-username/recipe-app.git`).
+3.  Run the following commands in your terminal (I have already done `git init` and `git commit` for you):
 
-## Option 2: Vercel (Recommended for Best Performance)
-If you have a GitHub account:
-1.  Push this code to a new GitHub repository.
-2.  Go to [Vercel.com](https://vercel.com) and log in.
-3.  Click **"Add New..."** -> **"Project"**.
-4.  Select your repository.
-5.  Framework Preset should auto-detect as **Vite**.
-6.  Click **Deploy**.
+    ```bash
+    git remote add origin <PASTE_YOUR_REPO_URL_HERE>
+    git branch -M main
+    git push -u origin main
+    ```
 
-## Option 3: Local Preview
-To test the production build locally before deploying:
-1.  Run `npm run preview` in your terminal.
-2.  It will serve the `dist` folder at `http://localhost:4173`.
+## Step 2: Host on Vercel
+Once your code is on GitHub:
+
+1.  Go to [Vercel.com](https://vercel.com) and log in.
+2.  Click **"Add New..."** -> **"Project"**.
+3.  Select **"Import from GitHub"**.
+4.  Find your `recipe-app` repository and click **Import**.
+5.  Vercel will detect it's a Vite app. Just click **Deploy**.
+
+ Your app will be live in less than a minute!
