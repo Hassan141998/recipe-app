@@ -57,6 +57,21 @@ export const GlobalProvider = ({ children }) => {
         setShoppingList(prev => prev.filter(item => item.id !== id));
     };
 
+
+    // Custom Images Logic
+    const [customImages, setCustomImages] = useState(() => {
+        const saved = localStorage.getItem('customImages');
+        return saved ? JSON.parse(saved) : {};
+    });
+
+    useEffect(() => {
+        localStorage.setItem('customImages', JSON.stringify(customImages));
+    }, [customImages]);
+
+    const addCustomImage = (id, url) => {
+        setCustomImages(prev => ({ ...prev, [id]: url }));
+    };
+
     const value = {
         favorites,
         toggleFavorite,
@@ -64,7 +79,9 @@ export const GlobalProvider = ({ children }) => {
         shoppingList,
         addToShoppingList,
         toggleIngredient,
-        removeIngredient
+        removeIngredient,
+        customImages,
+        addCustomImage
     };
 
     return (

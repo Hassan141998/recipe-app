@@ -1,221 +1,318 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import Loader from '../components/Loader';
-import { Heart, ShoppingBag, ArrowLeft, Youtube, Clock, MapPin, Tag } from 'lucide-react';
 import { useGlobalContext } from '../context/GlobalState';
+import Loader from '../components/Loader';
+import { Heart, ShoppingBag, ArrowLeft, Youtube, PlayCircle, Edit } from 'lucide-react'; // Added Edit icon
 
 const RecipeDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [recipe, setRecipe] = useState(null);
     const [loading, setLoading] = useState(true);
-    const { toggleFavorite, isFavorite, addToShoppingList } = useGlobalContext();
+    const [showEdit, setShowEdit] = useState(false);
+    const [newImage, setNewImage] = useState('');
+
+    const {
+        toggleFavorite,
+        isFavorite,
+        addToShoppingList,
+        customImages,
+        addCustomImage
+    } = useGlobalContext();
 
     useEffect(() => {
-        const fetchRecipe = async () => {
-            try {
-                const data = await api.getRecipeById(id);
-                setRecipe(data);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchRecipe();
+        api.getRecipeById(id).then(data => {
+            setRecipe(data);
+            setLoading(false);
+        });
     }, [id]);
 
-    if (loading) return <Loader />;
-    if (!recipe) return <div className="container p-4">Recipe not found</div>;
+    if (loading) return <div className="flex-center p-8"><Loader /></div>;
+    if (!recipe) return <div className="p-8 text-center">Recipe not found</div>;
 
-    // MealDB returns ingredients as strIngredient1, strMeasure1, etc.
+    const nutrients = [
+        { label: 'Calories', value: '320' },
+        { label: 'Protein', value: '25g' },
+        { label: 'Carbs', value: '45g' },
+        { label: 'Fat', value: '12g' },
+    ];
+
+    // Ingredients extraction
     const ingredients = [];
     for (let i = 1; i <= 20; i++) {
-        const ingredient = recipe[`strIngredient${i}`];
+        const ingredient = recipe[`strIngredients${i}`] || recipe[`strIngredient${i}`]; // Handle API inconsistency
         const measure = recipe[`strMeasure${i}`];
         if (ingredient && ingredient.trim()) {
-            ingredients.push({ name: ingredient, measure: measure });
+            ingredients.push({ name: ingredient, measure });
         }
     }
 
-    const isFav = isFavorite(recipe.idMeal);
+    // Determine Image Source
+    const displayImage = customImages[id] || recipe.strMealThumb;
+
+    const handleImageSave = () => {
+        if (newImage.trim()) {
+            addCustomImage(id, newImage);
+            setShowEdit(false);
+            setNewImage('');
+        }
+    };
 
     return (
-        <div className="recipe-detail fade-in">
-            {/* Hero Image & Back Button */}
-            <div className="hero-container">
+        <div className="recipe-detail-page fade-in">
+            <div className="hero-section">
+                <img src={displayImage} alt={recipe.strMeal} className="hero-image" />
                 <button className="back-btn" onClick={() => navigate(-1)}>
-                    <ArrowLeft size={24} color="white" />
+                    <ArrowLeft size={24} />
                 </button>
-                <img src={recipe.strMealThumb} alt={recipe.strMeal} className="hero-image" />
-                <div className="hero-overlay"></div>
-                <div className="hero-content">
-                    <h1 className="text-h1 hero-title">{recipe.strMeal}</h1>
-                    <div className="hero-meta">
-                        <span className="flex-center gap-2"><MapPin size={16} /> {recipe.strArea}</span>
-                        <span className="flex-center gap-2"><Tag size={16} /> {recipe.strCategory}</span>
-                    </div>
-                </div>
+                <button className="edit-image-btn" onClick={() => setShowEdit(!showEdit)}>
+                    <Edit size={20} />
+                </button>
             </div>
 
-            <div className="container content-body">
-                {/* Actions */}
-                <div className="action-bar">
-                    <button
-                        className={`btn-icon action-btn ${isFav ? 'active' : ''}`}
-                        onClick={() => toggleFavorite(recipe)}
-                    >
-                        <Heart size={24} fill={isFav ? "currentColor" : "none"} />
-                    </button>
+            {/* Image Edit Input (Simple overlay) */}
+            {showEdit && (
+                <div style={{ padding: '1rem', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
+                    <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>Paste new image URL:</p>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                            type="text"
+                            value={newImage}
+                            onChange={(e) => setNewImage(e.target.value)}
+                            placeholder="https://..."
+                            style={{
+                                flex: 1,
+                                padding: '8px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--color-border)'
+                            }}
+                        />
+                        <button
+                            onClick={handleImageSave}
+                            style={{
+                                background: 'var(--color-primary)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0 1rem',
+                                borderRadius: '8px'
+                            }}
+                        >
+                            Save
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <div className="content-container">
+                <div className="header-info">
+                    <div className="title-row">
+                        <h1 className="text-h1">{recipe.strMeal}</h1>
+                        <button
+                            className={`fav-btn ${isFavorite(recipe.idMeal) ? 'active' : ''}`}
+                            onClick={() => toggleFavorite(recipe)}
+                        >
+                            <Heart size={24} fill={isFavorite(recipe.idMeal) ? "currentColor" : "none"} />
+                        </button>
+                    </div>
+                    <div className="meta-row">
+                        <span className="meta-tag">{recipe.strArea}</span>
+                        <span className="meta-tag">{recipe.strCategory}</span>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="action-buttons">
                     {recipe.strYoutube && (
-                        <a href={recipe.strYoutube} target="_blank" rel="noreferrer" className="btn-icon action-btn youtube">
-                            <Youtube size={24} />
+                        <a
+                            href={recipe.strYoutube}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="action-btn secondary"
+                        >
+                            <PlayCircle size={20} /> Watch Video
                         </a>
                     )}
                 </div>
 
                 {/* Ingredients */}
-                <section className="section">
-                    <h2 className="text-h2">Ingredients</h2>
-                    <ul className="ingredient-list">
+                <div className="section">
+                    <h2 className="text-h2 mb-4">Ingredients</h2>
+                    <div className="ingredients-list">
                         {ingredients.map((ing, idx) => (
-                            <li key={idx} className="ingredient-item">
-                                <span className="ing-name">{ing.name}</span>
-                                <span className="ing-measure">{ing.measure}</span>
+                            <div key={idx} className="ingredient-row">
+                                <div className="ing-info">
+                                    <span className="ing-name">{ing.name}</span>
+                                    <span className="ing-measure">{ing.measure}</span>
+                                </div>
                                 <button
-                                    className="add-shop-btn"
+                                    className="add-ing-btn"
                                     onClick={() => addToShoppingList(ing)}
-                                    aria-label="Add to shopping list"
                                 >
-                                    <ShoppingBag size={16} />
+                                    <ShoppingBag size={18} />
                                 </button>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-
-                {/* Instructions */}
-                <section className="section">
-                    <h2 className="text-h2">Instructions</h2>
-                    <div className="instructions-text">
-                        {recipe.strInstructions.split('\r\n').map((step, idx) => (
-                            step.trim() && <p key={idx}>{step}</p>
+                            </div>
                         ))}
                     </div>
-                </section>
+                </div>
+
+                {/* Instructions */}
+                <div className="section">
+                    <h2 className="text-h2 mb-4">Instructions</h2>
+                    <p className="instructions-text">
+                        {recipe.strInstructions}
+                    </p>
+                </div>
             </div>
 
             <style>{`
-        .recipe-detail {
-          padding-bottom: 80px;
+        .recipe-detail-page {
+            padding-bottom: 5rem;
+            background: var(--color-bg);
+            min-height: 100vh;
         }
-        .hero-container {
-          position: relative;
-          height: 350px;
-          color: white;
+        .hero-section {
+            position: relative;
+            height: 350px;
+            width: 100%;
         }
         .hero-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .hero-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .back-btn {
-          position: absolute;
-          top: 1rem;
-          left: 1rem;
-          z-index: 10;
-          padding: 8px;
-          border-radius: 50%;
-          background: rgba(0,0,0,0.3);
-          backdrop-filter: blur(4px);
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            z-index: 10;
         }
-        .hero-content {
-          position: absolute;
-          bottom: 2rem;
-          left: 1rem;
-          right: 1rem;
+        .edit-image-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
         }
-        .hero-title {
-          text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        .content-container {
+            border-radius: 30px 30px 0 0;
+            background: var(--color-bg);
+            margin-top: -30px;
+            position: relative;
+            z-index: 5;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
         }
-        .hero-meta {
-          display: flex;
-          gap: 1rem;
-          margin-top: 0.5rem;
-          font-size: 0.9rem;
-          opacity: 0.9;
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
         }
-        .content-body {
-          margin-top: -1.5rem;
-          background: var(--color-bg);
-          border-radius: 24px 24px 0 0;
-          position: relative;
-          padding-top: 2rem;
+        .fav-btn {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: transform 0.2s;
         }
-        .action-bar {
-          display: flex;
-          justify-content: flex-end;
-          gap: 1rem;
-          margin-bottom: 2rem;
+        .fav-btn.active {
+            color: #FF5A5F;
+        }
+        .fav-btn:active {
+            transform: scale(0.8);
+        }
+        .meta-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .meta-tag {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            padding: 4px 12px;
+            border-radius: 100px;
+            border: 1px solid var(--color-border);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
         .action-btn {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          color: var(--color-text-secondary);
-          width: 44px;
-          height: 44px;
-          box-shadow: var(--shadow-sm);
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s;
         }
-        .action-btn.active {
-          color: var(--color-primary);
-          border-color: var(--color-primary);
-          background: #FFF5F5;
+        .action-btn.secondary {
+            background: #FF0000; /* Youtube Red */
+            color: white;
         }
-        .action-btn.youtube {
-          color: #FF0000;
+        .action-btn:active {
+            transform: scale(0.98);
         }
-        .section {
-          margin-bottom: 2rem;
+        .mb-4 { margin-bottom: 1rem; }
+        .section { margin-bottom: 2.5rem; }
+        
+        .ingredients-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
         }
-        .text-h2 {
-          margin-bottom: 1rem;
+        .ingredient-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem;
+            background: var(--color-surface);
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
         }
-        .ingredient-list {
-          list-style: none;
+        .ing-info {
+            display: flex;
+            flex-direction: column;
         }
-        .ingredient-item {
-          display: flex;
-          align-items: center;
-          padding: 0.75rem 0;
-          border-bottom: 1px solid var(--color-border);
+        .ing-name { font-weight: 500; }
+        .ing-measure { font-size: 0.85rem; color: var(--color-text-secondary); }
+        .add-ing-btn {
+            background: rgba(0,0,0,0.05);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            color: var(--color-text-secondary);
+            cursor: pointer;
         }
-        .ing-name {
-          flex: 1;
-          font-weight: 500;
-        }
-        .ing-measure {
-          color: var(--color-text-secondary);
-          margin-right: 1rem;
-        }
-        .add-shop-btn {
-          color: var(--color-primary);
-          padding: 4px;
-          border-radius: 4px;
-        }
-        .add-shop-btn:active {
-          background: var(--color-primary);
-          color: white;
-        }
-        .instructions-text p {
-          margin-bottom: 1rem;
-          line-height: 1.6;
-          color: var(--color-text-secondary);
+        .instructions-text {
+            line-height: 1.8;
+            color: var(--color-text-secondary);
         }
       `}</style>
         </div>
