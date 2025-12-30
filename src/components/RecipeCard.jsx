@@ -1,28 +1,32 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Users } from 'lucide-react';
+import { useGlobalContext } from '../context/GlobalState';
 
 const RecipeCard = ({ recipe }) => {
-    return (
-        <Link to={`/recipe/${recipe.idMeal}`} className="recipe-card">
-            <div className="card-image-container">
-                <img
-                    src={recipe.strMealThumb}
-                    alt={recipe.strMeal}
-                    className="card-image"
-                    loading="lazy"
-                />
-                <div className="card-overlay" />
-            </div>
-            <div className="card-content">
-                <h3 className="card-title line-clamp-2">{recipe.strMeal}</h3>
-                <div className="card-meta">
-                    {recipe.strArea && <span className="tag">{recipe.strArea}</span>}
-                    {recipe.strCategory && <span className="tag">{recipe.strCategory}</span>}
-                </div>
-            </div>
+  const { customImages } = useGlobalContext();
+  const displayImage = customImages[recipe.idMeal] || recipe.strMealThumb;
 
-            <style>{`
+  return (
+    <Link to={`/recipe/${recipe.idMeal}`} className="recipe-card">
+      <div className="card-image-container">
+        <img
+          src={displayImage}
+          alt={recipe.strMeal}
+          className="card-image"
+          loading="lazy"
+        />
+        <div className="card-overlay" />
+      </div>
+      <div className="card-content">
+        <h3 className="card-title line-clamp-2">{recipe.strMeal}</h3>
+        <div className="card-meta">
+          {recipe.strArea && <span className="tag">{recipe.strArea}</span>}
+          {recipe.strCategory && <span className="tag">{recipe.strCategory}</span>}
+        </div>
+      </div>
+
+      <style>{`
         .recipe-card {
           display: block;
           border-radius: var(--radius-lg);
@@ -79,8 +83,8 @@ const RecipeCard = ({ recipe }) => {
           letter-spacing: 0.5px;
         }
       `}</style>
-        </Link>
-    );
+    </Link>
+  );
 };
 
 export default RecipeCard;
